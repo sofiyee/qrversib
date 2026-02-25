@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate QR Presence</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            height: 100vh;
+            font-family: Segoe UI, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #dfe9f3;
+            overflow: hidden;
+        }
+
+        /* BACKGROUND */
+
+        .bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        /* BUBBLE */
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.6);
+            backdrop-filter: blur(30px);
+
+            box-shadow:
+                inset 0 0 60px rgba(255,255,255,0.7),
+                0 0 80px rgba(255,255,255,0.25);
+        }
+
+        /* kanan atas besar */
+
+        .orb1 {
+            width: 520px;
+            height: 520px;
+            top: -120px;
+            right: -120px;
+
+            background:
+                radial-gradient(circle at 40% 40%,
+                rgba(255,255,255,0.9),
+                rgba(130,170,255,0.6),
+                rgba(255,160,220,0.5),
+                rgba(255,200,140,0.3),
+                transparent 70%);
+        }
+
+        /* kiri blur */
+
+        .orb2 {
+            width: 420px;
+            height: 420px;
+            left: -120px;
+            top: 120px;
+
+            background:
+                radial-gradient(circle at 50% 50%,
+                rgba(255,255,255,0.9),
+                rgba(160,220,255,0.5),
+                rgba(200,200,255,0.4),
+                transparent 70%);
+        }
+
+        /* bawah kanan kecil */
+
+        .orb3 {
+            width: 260px;
+            height: 260px;
+            bottom: -60px;
+            right: 260px;
+
+            background:
+                radial-gradient(circle at 40% 60%,
+                rgba(255,255,255,0.9),
+                rgba(120,255,200,0.6),
+                rgba(140,180,255,0.4),
+                transparent 70%);
+        }
+
+        /* CARD */
+
+        .card {
+            position: relative;
+            z-index: 2;
+            width: 380px;
+            padding: 35px;
+            border-radius: 22px;
+
+            /* glass */
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(40px);
+
+            border: 1px solid rgba(255,255,255,0.6);
+
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+
+            text-align: center;
+        }
+
+        /* TITLE */
+
+        .card h2 {
+            margin-bottom: 20px;
+        }
+
+        /* INPUT */
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.7);
+        }
+
+        /* BUTTON */
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #3b6cff;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #274bdb;
+        }
+
+        /* QR */
+
+        #qrCanvas {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* COUNTDOWN */
+
+        #countdown {
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        /* PROGRESS */
+
+        .progress-bar {
+            margin-top: 10px;
+            width: 100%;
+            height: 8px;
+            background: #e5e5e5;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            width: 100%;
+            background: #3b6cff;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background -->
+    <div class="bg">
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+
+        <h2>Generate QR Absensi</h2>
+
+        <input type="text" id="course_id" placeholder="Course ID">
+        <input type="text" id="session_id" placeholder="Session ID">
+
+        <button onclick="generateQR()">Generate QR</button>
+
+        <div id="qrCanvas"></div>
+
+        <div id="countdown"></div>
+
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const BASE_URL = "https://semilyric-stanton-semioval.ngrok-free.dev/cloud-presensi-versib-e62c9/us-central1/api";
+        let countdownInterval;
+
+        async function generateQR() {
+
+            const course_id = document.getElementById("course_id").value;
+            const session_id = document.getElementById("session_id").value;
+
+            if (!course_id || !session_id) {
+                alert("Isi course dan session dulu!");
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/presence/qr/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ course_id, session_id })
+            });
+
+            const data = await res.json();
+
+            if (!data.ok) {
+                alert(data.message);
+                return;
+            }
+
+            const qr_token = data.data.qr_token;
+
+            document.getElementById("qrCanvas").innerHTML = "";
+
+            QRCode.toCanvas(qr_token, { width: 220 }, function (err, canvas) {
+                document.getElementById("qrCanvas").appendChild(canvas);
+            });
+
+            startCountdown(120);
+        }
+
+        function startCountdown(duration) {
+
+            let timeLeft = duration;
+            const countdownEl = document.getElementById("countdown");
+            const progressEl = document.getElementById("progress");
+
+            clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+
+                timeLeft--;
+
+                countdownEl.innerHTML = `QR berlaku: ${timeLeft} detik`;
+
+                const percentage = (timeLeft / duration) * 100;
+                progressEl.style.width = percentage + "%";
+
+                if (timeLeft <= 0) {
+
+                    clearInterval(countdownInterval);
+                    countdownEl.innerHTML = "QR Expired! Generate ulang...";
+                    generateQR();
+
+                }
+
+            }, 1000);
+
+        }
+    </script>
+
+</body>
+</html>

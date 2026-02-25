@@ -1,6 +1,6 @@
 {
   // Example (Standard Edition):
-  //
+  
   // "indexes": [
   //   {
   //     "collectionGroup": "widgets",
@@ -9,8 +9,8 @@
   //       { "fieldPath": "foo", "arrayConfig": "CONTAINS" },
   //       { "fieldPath": "bar", "mode": "DESCENDING" }
   //     ]
-  //   },
-  //
+  //   },S
+  
   //  "fieldOverrides": [
   //    {
   //      "collectionGroup": "widgets",
@@ -21,9 +21,9 @@
   //    },
   //   ]
   // ]
-  //
+  
   // Example (Enterprise Edition):
-  //
+  
   // "indexes": [
   //   {
   //     "collectionGroup": "reviews",
